@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LW Ops" />
+  <meta name="theme-color" content="#0a0e14" />
+  <meta name="description" content="Personal Last War: Survival command tools — build time calculator and power tracker" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <title>LW Command Post</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --surface: #12181f;
+      --surface2: #1a222d;
+      --border: #2a3544;
+      --text: #e8eef5;
+      --muted: #8b9aab;
+      --accent: #f97316;
+      --accent-dim: #c45d12;
+      --green: #34d399;
+      --red: #f87171;
+      --gold: #fbbf24;
+      --purple: #c084fc;
+      --radius: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.45;
+      min-height: 100%;
+      min-height: 100dvh;
+    }
+
+    body {
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      background-image:
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(249, 115, 22, 0.08), transparent 50%),
+        linear-gradient(180deg, #0a0e14 0%, #0d1219 100%);
+      background-attachment: fixed;
+    }
+
+    .app {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 12px 14px 28px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      text-align: center;
+      padding: 8px 0 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(249, 115, 22, 0.12);
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 0%, #fbbf24 40%, #f97316 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 5px;
+      margin-bottom: 16px;
+    }
+
+    .tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 10px 4px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .tab.active {
+      background: linear-gradient(180deg, rgba(249, 115, 22, 0.22), rgba(249, 115, 22, 0.08));
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
+    }
+
+    .panel {
+      display: none;
+      flex: 1;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin: 0 0 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title::before {
+      content: "";
+      width: 3px;
+      height: 12px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .row > * { flex: 1; min-width: 0; }
+
+    .row.stack {
+      flex-direction: column;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      max-width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    /* iOS date pickers have a large intrinsic width; keep them inside the card */
+    .date-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    input[type="date"] {
+      display: block;
+      box-sizing: border-box;
+      min-width: 0;
+      max-width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+      min-width: 0;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.18);
+    }
+
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.12s, filter 0.12s;
+    }
+
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #fb923c, #ea580c);
+      color: #0a0e14;
+      box-shadow: 0 4px 16px rgba(249, 115, 22, 0.35);
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: rgba(248, 113, 113, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      width: auto;
+    }
+
+    .result-box {
+      background: linear-gradient(160deg, rgba(249, 115, 22, 0.12), rgba(26, 34, 45, 0.9));
+      border: 1px solid rgba(249, 115, 22, 0.35);
+      border-radius: var(--radius);
+      padding: 18px 16px;
+      text-align: center;
+    }
+
+    .result-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .result-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-meta {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .result-meta span strong {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-value.gold { color: var(--gold); }
+    .stat-value.green { color: var(--green); }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .log-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 12px 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      position: relative;
+    }
+
+    .log-item::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 10px;
+      bottom: 10px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .log-main { flex: 1; min-width: 0; }
+
+    .log-power {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .log-delta { font-size: 0.78rem; font-weight: 600; margin-left: 6px; }
+    .log-delta.up { color: var(--green); }
+    .log-delta.down { color: var(--red); }
+    .log-delta.flat { color: var(--muted); }
+
+    .log-date { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .log-notes { font-size: 0.82rem; color: var(--text); margin-top: 4px; opacity: 0.9; word-break: break-word; }
+
+    .empty {
+      text-align: center;
+      padding: 28px 16px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      border-color: rgba(249, 115, 22, 0.5);
+      background: rgba(249, 115, 22, 0.12);
+      color: var(--accent);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .switch-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .switch-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #2a3444;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      transition: 0.2s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      top: 3px;
+      background: #c5cedb;
+      border-radius: 50%;
+      transition: 0.2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    }
+
+    .switch input:checked + .slider {
+      background: linear-gradient(180deg, #fb923c, #ea580c);
+      border-color: rgba(249, 115, 22, 0.7);
+    }
+
+    .switch input:checked + .slider:before {
+      transform: translateX(22px);
+      background: #0a0e14;
+    }
+
+    /* Position toggles */
+    .pos-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .pos-btn {
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.3;
+      transition: all 0.15s;
+    }
+
+    .pos-btn strong {
+      display: block;
+      color: var(--text);
+      font-size: 0.85rem;
+      margin-bottom: 2px;
+    }
+
+    .pos-btn.active {
+      border-color: rgba(249, 115, 22, 0.55);
+      background: rgba(249, 115, 22, 0.14);
+      color: var(--accent);
+    }
+
+    .pos-btn.active strong { color: var(--accent); }
+
+    .boost-summary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .boost-summary .total {
+      font-weight: 800;
+      color: var(--gold);
+      font-variant-numeric: tabular-nums;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 20px;
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      opacity: 0.7;
+    }
+
+    .lawyer {
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .lawyer.ur {
+      border-color: rgba(251, 191, 36, 0.55);
+      background: linear-gradient(160deg, rgba(251, 191, 36, 0.14), var(--surface2) 55%);
+    }
+
+    .lawyer.ssr {
+      border-color: rgba(192, 132, 252, 0.5);
+      background: linear-gradient(160deg, rgba(192, 132, 252, 0.14), var(--surface2) 55%);
+    }
+
+    .lawyer-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .rarity-pill {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+
+    .lawyer.ur .rarity-pill {
+      color: #1a1403;
+      background: linear-gradient(180deg, #fde68a, #f59e0b);
+    }
+
+    .lawyer.ssr .rarity-pill {
+      color: #2e1065;
+      background: linear-gradient(180deg, #e9d5ff, #a855f7);
+    }
+
+    .combo-item {
+      font-size: 0.88rem;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .combo-item:last-child { border-bottom: none; }
+
+    @media (max-width: 360px) {
+      .result-value { font-size: 1.45rem; }
+      h1 { font-size: 1.35rem; }
+      .pos-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="badge">Personal Ops</div>
+      <h1>LW Command Post</h1>
+      <p class="subtitle">Last War · Time & Power Tools</p>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="calc" role="tab">⏱ Time</button>
+      <button class="tab" data-tab="power" role="tab">⚡ Power</button>
+      <button class="tab" data-tab="help" role="tab">🤝 Help</button>
+      <button class="tab" data-tab="buffs" role="tab">⚙ Buffs</button>
+    </nav>
+
+    <!-- TIME CALCULATOR -->
+    <section id="panel-calc" class="panel active" role="tabpanel">
+      <div class="card">
+        <h2 class="card-title">Build / Research Time</h2>
+
+        <div class="mode-toggle">
+          <button type="button" class="mode-btn active" data-mode="build">Construction</button>
+          <button type="button" class="mode-btn" data-mode="research">Research</button>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="days">Days</label>
+            <input type="number" id="days" min="0" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="hours">Hours</label>
+            <input type="number" id="hours" min="0" max="23" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="mins">Minutes</label>
+            <input type="number" id="mins" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+        </div>
+
+        <label style="margin-bottom: 8px;">Capitol Position (only one)</label>
+        <div class="pos-grid" id="pos-grid">
+          <button type="button" class="pos-btn active" data-pos="none">
+            <strong>None</strong>
+            +0%
+          </button>
+          <button type="button" class="pos-btn" data-pos="dev">
+            <strong>Sec. Development</strong>
+            <span class="pos-detail">Build +50% · Tech +25%</span>
+          </button>
+          <button type="button" class="pos-btn" data-pos="sci">
+            <strong>Sec. Science</strong>
+            <span class="pos-detail">Tech +50% · Build +25%</span>
+          </button>
+          <button type="button" class="pos-btn" data-pos="vp">
+            <strong>Vice President</strong>
+            <span class="pos-detail">Build +20% · Tech +20%</span>
+          </button>
+        </div>
+
+        <div class="switch-row">
+          <div>
+            <div class="switch-label">Alliance Coop Buff</div>
+            <div class="switch-sub">Adds +20% construction / research speed</div>
+          </div>
+          <label class="switch" for="coop-switch">
+            <input type="checkbox" id="coop-switch" />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="boost-summary">
+          <span>Base + Position + Coop</span>
+          <span class="total" id="total-boost">—%</span>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="boost">Base Speed Boost %</label>
+            <input type="number" id="boost" min="0" step="0.1" inputmode="decimal" placeholder="VIP + tech + alliance…" />
+          </div>
+        </div>
+
+        <div class="boost-summary">
+          <span>Free Speed-up <span style="color:var(--muted);font-weight:500;">(from Buffs)</span></span>
+          <span class="total" id="free-display">—</span>
+        </div>
+
+        <p class="hint">
+          Position buffs only apply to builds/research you <em>start</em> while holding the title.
+          Alliance Coop Buff adds +20% speed when active.
+          Free speed-up is pulled from the Buffs tab and subtracted after the % calculation.
+        </p>
+
+        <button class="btn btn-primary" id="btn-calc" style="margin-top: 12px;">Calculate</button>
+      </div>
+
+      <div class="card" id="result-card" style="display: none;">
+        <h2 class="card-title">Result</h2>
+        <div class="result-box">
+          <div class="result-label">Final Completion Time</div>
+          <div class="result-value" id="result-time">—</div>
+          <div class="result-meta">
+            <span>Buffed <strong id="result-buffed">—</strong></span>
+            <span>Free used <strong id="result-free">—</strong></span>
+            <span>Saved vs base <strong id="result-saved">—</strong></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- POWER LOG -->
+    <section id="panel-power" class="panel" role="tabpanel">
+      <div class="summary-grid" id="power-summary">
+        <div class="stat">
+          <div class="stat-label">Latest Power</div>
+          <div class="stat-value gold" id="stat-latest">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Growth</div>
+          <div class="stat-value green" id="stat-growth">—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Log Entry</h2>
+        <div class="row stack">
+          <div class="date-wrap">
+            <label for="p-date">Date</label>
+            <input type="date" id="p-date" />
+          </div>
+          <div>
+            <label for="p-power">Power</label>
+            <input type="number" id="p-power" min="0" inputmode="numeric" placeholder="e.g. 12500000" />
+          </div>
+        </div>
+        <div style="margin-bottom: 12px;">
+          <label for="p-notes">Notes (optional)</label>
+          <input type="text" id="p-notes" placeholder="HQ 28, T10 push, etc." maxlength="120" />
+        </div>
+        <button class="btn btn-primary" id="btn-add-power">Add Entry</button>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">History</h2>
+        <div class="log-list" id="log-list">
+          <div class="empty">No entries yet. Log your first power reading.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HELP TIME -->
+    <section id="panel-help" class="panel" role="tabpanel">
+      <div class="card">
+        <h2 class="card-title">Timer to Optimize</h2>
+        <div class="mode-toggle">
+          <button type="button" class="mode-btn active" id="help-src-calc" data-helpsrc="calc">Use Time result</button>
+          <button type="button" class="mode-btn" id="help-src-manual" data-helpsrc="manual">Manual time</button>
+        </div>
+        <p class="hint" id="help-calc-preview" style="margin-top:0;">No Time calculation yet. Run one on the Time tab, or switch to Manual.</p>
+        <div id="help-manual" style="display:none;">
+          <div class="row">
+            <div>
+              <label for="help-days">Days</label>
+              <input type="number" id="help-days" min="0" inputmode="numeric" placeholder="0" value="0" />
+            </div>
+            <div>
+              <label for="help-hours">Hours</label>
+              <input type="number" id="help-hours" min="0" inputmode="numeric" placeholder="0" value="0" />
+            </div>
+            <div>
+              <label for="help-mins">Minutes</label>
+              <input type="number" id="help-mins" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+            </div>
+          </div>
+        </div>
+        <div class="summary-grid" style="margin-top:4px;">
+          <div class="stat">
+            <div class="stat-label">Hub base helps</div>
+            <div class="stat-value" id="hub-helps-view">0</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Lawyer slots</div>
+            <div class="stat-value" id="hub-slots-view">4</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Alliance extra</div>
+            <div class="stat-value gold" id="hub-fixed-view">0s</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Lawyers saved</div>
+            <div class="stat-value" id="hub-lawyer-count">0</div>
+          </div>
+        </div>
+        <p class="hint" style="margin-bottom:0;">Each help uses the greater of 0.5% remaining time or fixed help time (min 1 minute). Edit standing values and lawyers below Best Arrangement.</p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Best Arrangement</h2>
+        <button class="btn btn-primary" id="btn-opt-help">Find Best Combo</button>
+        <div id="help-result" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Standing Buffs</h2>
+        <p class="hint" style="margin-top:0;margin-bottom:14px;">
+          Hub base helps = Alliance Support Hub helps with no lawyers assigned. Extra help time is alliance tech (added to lawyer times).
+        </p>
+        <div class="row">
+          <div>
+            <label for="hub-helps">Hub base helps</label>
+            <input type="number" id="hub-helps" min="0" inputmode="numeric" placeholder="0" />
+          </div>
+          <div>
+            <label for="hub-slots">Lawyer slots</label>
+            <input type="number" id="hub-slots" min="1" max="8" inputmode="numeric" placeholder="4" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="hub-fixed-m">Alliance extra help (min)</label>
+            <input type="number" id="hub-fixed-m" min="0" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="hub-fixed-s">Extra help (sec)</label>
+            <input type="number" id="hub-fixed-s" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Your Lawyers</h2>
+        <div>
+          <label for="lw-name">Name</label>
+          <input type="text" id="lw-name" placeholder="Charles, Javier…" maxlength="40" />
+        </div>
+        <div class="mode-toggle" style="margin-top:10px;">
+          <button type="button" class="mode-btn active" id="lw-rarity-ur" data-rarity="UR">UR · Gold</button>
+          <button type="button" class="mode-btn" id="lw-rarity-ssr" data-rarity="SSR">SSR · Purple</button>
+        </div>
+        <div class="row">
+          <div>
+            <label for="lw-helps">Helps</label>
+            <input type="number" id="lw-helps" min="0" inputmode="numeric" placeholder="e.g. 3" />
+          </div>
+          <div>
+            <label for="lw-time-m">Help time min</label>
+            <input type="number" id="lw-time-m" min="0" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="lw-time-s">Help time sec</label>
+            <input type="number" id="lw-time-s" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-add-lawyer">Add Lawyer</button>
+        <div id="lawyer-list" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <!-- BUFFS / SETTINGS -->
+    <section id="panel-buffs" class="panel" role="tabpanel">
+      <div class="card">
+        <h2 class="card-title">Default Permanent Buffs</h2>
+        <p class="hint" style="margin-top: 0; margin-bottom: 14px;">
+          Base speed from VIP, research, alliance tech, profession, survivors, etc. (without Capitol positions).
+        </p>
+        <div class="row">
+          <div>
+            <label for="buff-build">Construction %</label>
+            <input type="number" id="buff-build" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 145" />
+          </div>
+          <div>
+            <label for="buff-research">Research %</label>
+            <input type="number" id="buff-research" min="0" step="0.1" inputmode="decimal" placeholder="e.g. 120" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Free Speed-up Time</h2>
+        <p class="hint" style="margin-top: 0; margin-bottom: 14px;">
+          Free instant time from Builder’s Hut (construction) and Tech Center (research). Stored and applied on the Time tab.
+        </p>
+        <label>Construction free</label>
+        <div class="row">
+          <div>
+            <label for="free-build-h">Hours</label>
+            <input type="number" id="free-build-h" min="0" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="free-build-m">Minutes</label>
+            <input type="number" id="free-build-m" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="free-build-s">Seconds</label>
+            <input type="number" id="free-build-s" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+        </div>
+        <label>Research free</label>
+        <div class="row">
+          <div>
+            <label for="free-res-h">Hours</label>
+            <input type="number" id="free-res-h" min="0" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="free-res-m">Minutes</label>
+            <input type="number" id="free-res-m" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+          <div>
+            <label for="free-res-s">Seconds</label>
+            <input type="number" id="free-res-s" min="0" max="59" inputmode="numeric" placeholder="0" value="0" />
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-save-buffs" style="margin-top: 4px;">Save All</button>
+        <p class="hint" id="buff-status" style="display: none; color: var(--green);"></p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Data</h2>
+        <p class="hint" style="margin-top: 0; margin-bottom: 12px;">
+          All data stays on this device (localStorage). Use full backup before replacing the HTML file.
+        </p>
+        <button class="btn btn-ghost" id="btn-export">Export Full Backup (JSON)</button>
+        <button class="btn btn-ghost" id="btn-import" style="margin-top: 8px;">Import Backup</button>
+        <input type="file" id="import-file" accept="application/json,.json" style="display:none;" />
+        <button class="btn btn-ghost" id="btn-clear" style="margin-top: 8px; color: var(--red); border-color: rgba(248,113,113,0.35);">Clear All Data</button>
+      </div>
+    </section>
+
+    <footer>
+      LW Command Post · Offline · Personal use only
+      <div class="install-note" id="install-note" style="display:none; margin-top:10px; font-size:0.78rem; color:var(--muted); line-height:1.4;">
+        <strong style="color:var(--accent);">Add to Home Screen</strong><br>
+        iPhone: Share → Add to Home Screen<br>
+        Android: Menu → Add to Home Screen / Install
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = "lw_command_post_v2";
+
+      // Position bonuses (normal / non-Conqueror)
+      // Construction / Research
+      const POS = {
+        none: { build: 0, research: 0, label: "None" },
+        dev:  { build: 50, research: 25, label: "Sec. Development" },
+        sci:  { build: 25, research: 50, label: "Sec. Science" },
+        vp:   { build: 20, research: 20, label: "Vice President" }
+      };
+
+      let state = {
+        buffBuild: 100,
+        buffResearch: 80,
+        freeBuildSec: 0,
+        freeResearchSec: 0,
+        mode: "build",
+        position: "none",
+        coopBuff: false,
+        powerLog: [],
+        lawyers: [],
+        hubHelps: 0,
+        hubSlots: 4,
+        hubFixedSec: 0,
+        lastCalcSec: 0,
+        helpSrc: "calc"
+      };
+
+      let lawyerRarity = "UR";
+
+      function migrateFreeSeconds(data) {
+        let build = data.freeBuildSec;
+        let research = data.freeResearchSec;
+        if (build == null && data.freeBuildMin != null) build = Number(data.freeBuildMin) * 60;
+        if (research == null && data.freeResearchMin != null) research = Number(data.freeResearchMin) * 60;
+        return {
+          freeBuildSec: Math.max(0, Number(build) || 0),
+          freeResearchSec: Math.max(0, Number(research) || 0)
+        };
+      }
+
+      function load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lw_command_post_v1");
+          if (raw) {
+            const data = JSON.parse(raw);
+            const free = migrateFreeSeconds(data);
+            state = { ...state, ...data, ...free };
+            if (!Array.isArray(state.powerLog)) state.powerLog = [];
+            if (!Array.isArray(state.lawyers)) state.lawyers = [];
+            if (!state.position) state.position = "none";
+            if (!state.hubSlots) state.hubSlots = 4;
+            if (state.hubHelps == null) state.hubHelps = 0;
+            if (state.hubFixedSec == null) state.hubFixedSec = 0;
+            if (!state.helpSrc) state.helpSrc = "calc";
+          }
+        } catch (e) {
+          console.warn("Load failed", e);
+        }
+      }
+
+      function save() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            buffBuild: state.buffBuild,
+            buffResearch: state.buffResearch,
+            freeBuildSec: state.freeBuildSec,
+            freeResearchSec: state.freeResearchSec,
+            powerLog: state.powerLog,
+            lawyers: state.lawyers,
+            hubHelps: state.hubHelps,
+            hubSlots: state.hubSlots,
+            hubFixedSec: state.hubFixedSec,
+            lastCalcSec: state.lastCalcSec,
+            helpSrc: state.helpSrc,
+            coopBuff: !!state.coopBuff
+          }));
+        } catch (e) {
+          console.warn("Save failed", e);
+        }
+      }
+
+      function formatNumber(n) {
+        if (n == null || isNaN(n)) return "—";
+        return Number(n).toLocaleString("en-US");
+      }
+
+      function formatDuration(totalSeconds) {
+        if (totalSeconds < 0) totalSeconds = 0;
+        totalSeconds = Math.round(totalSeconds);
+        const d = Math.floor(totalSeconds / 86400);
+        const h = Math.floor((totalSeconds % 86400) / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        const parts = [];
+        if (d > 0) parts.push(d + "d");
+        if (h > 0 || d > 0) parts.push(h + "h");
+        if (m > 0 || h > 0 || d > 0) parts.push(m + "m");
+        parts.push(s + "s");
+        return parts.join(" ");
+      }
+
+      function parseHMS(hId, mId, sId) {
+        const h = Math.max(0, parseFloat(document.getElementById(hId).value) || 0);
+        const m = Math.max(0, parseFloat(document.getElementById(mId).value) || 0);
+        const s = Math.max(0, parseFloat(document.getElementById(sId).value) || 0);
+        return h * 3600 + m * 60 + s;
+      }
+
+      function writeHMS(hId, mId, sId, totalSeconds) {
+        totalSeconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        const hEl = document.getElementById(hId);
+        const mEl = document.getElementById(mId);
+        const sEl = document.getElementById(sId);
+        if (document.activeElement !== hEl) hEl.value = h;
+        if (document.activeElement !== mEl) mEl.value = m;
+        if (document.activeElement !== sEl) sEl.value = s;
+      }
+
+      function parseBaseSeconds() {
+        const d = Math.max(0, parseFloat(document.getElementById("days").value) || 0);
+        const h = Math.max(0, parseFloat(document.getElementById("hours").value) || 0);
+        const m = Math.max(0, parseFloat(document.getElementById("mins").value) || 0);
+        return d * 86400 + h * 3600 + m * 60;
+      }
+
+      function todayISO() {
+        const t = new Date();
+        return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+      }
+
+      function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      }
+
+      function currentPosBonus() {
+        const p = POS[state.position] || POS.none;
+        return state.mode === "build" ? p.build : p.research;
+      }
+
+      function coopBonus() {
+        return state.coopBuff ? 20 : 0;
+      }
+
+      function updateBoostSummary() {
+        const base = Math.max(0, parseFloat(document.getElementById("boost").value) || 0);
+        const pos = currentPosBonus();
+        const total = base + pos + coopBonus();
+        document.getElementById("total-boost").textContent = total.toFixed(1).replace(/\.0$/, "") + "%";
+      }
+
+      function applyCoop() {
+        const el = document.getElementById("coop-switch");
+        if (el) el.checked = !!state.coopBuff;
+        updateBoostSummary();
+      }
+
+      // Tabs
+      document.querySelectorAll(".tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+        });
+      });
+
+      // Mode
+      function applyMode() {
+        document.querySelectorAll(".mode-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.mode === state.mode);
+        });
+        const boostEl = document.getElementById("boost");
+        if (document.activeElement !== boostEl) {
+          boostEl.value = state.mode === "build" ? state.buffBuild : state.buffResearch;
+        }
+        const freeSec = state.mode === "build" ? state.freeBuildSec : state.freeResearchSec;
+        document.getElementById("free-display").textContent = formatDuration(freeSec);
+        updateBoostSummary();
+      }
+
+      document.querySelectorAll(".mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.mode = btn.dataset.mode;
+          applyMode();
+        });
+      });
+
+      // Position (mutually exclusive)
+      function applyPosition() {
+        document.querySelectorAll(".pos-btn").forEach(b => {
+          b.classList.toggle("active", b.dataset.pos === state.position);
+        });
+        updateBoostSummary();
+      }
+
+      document.querySelectorAll(".pos-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.position = btn.dataset.pos;
+          applyPosition();
+        });
+      });
+
+      document.getElementById("boost").addEventListener("input", updateBoostSummary);
+
+      document.getElementById("coop-switch").addEventListener("change", (e) => {
+        state.coopBuff = !!e.target.checked;
+        save();
+        updateBoostSummary();
+      });
+
+      // Calculate
+      document.getElementById("btn-calc").addEventListener("click", () => {
+        const baseSec = parseBaseSeconds();
+        const baseBoost = Math.max(0, parseFloat(document.getElementById("boost").value) || 0);
+        const posBoost = currentPosBonus();
+        const totalBoost = baseBoost + posBoost + coopBonus();
+        const freeSec = state.mode === "build" ? state.freeBuildSec : state.freeResearchSec;
+
+        if (baseSec <= 0) {
+          alert("Enter a base time greater than zero.");
+          return;
+        }
+
+        const multiplier = 1 + totalBoost / 100;
+        const buffedSec = baseSec / multiplier;
+        const freeUsed = Math.min(freeSec, buffedSec);
+        const finalSec = Math.max(0, buffedSec - freeUsed);
+        const savedSec = baseSec - finalSec;
+
+        document.getElementById("result-time").textContent = formatDuration(finalSec);
+        document.getElementById("result-buffed").textContent = formatDuration(buffedSec);
+        document.getElementById("result-free").textContent = formatDuration(freeUsed);
+        document.getElementById("result-saved").textContent = formatDuration(savedSec);
+        document.getElementById("result-card").style.display = "block";
+        state.lastCalcSec = finalSec;
+        save();
+        updateHelpCalcPreview();
+      });
+
+      // Power Log
+      function sortedLog() {
+        return [...state.powerLog].sort((a, b) => {
+          if (a.date !== b.date) return b.date.localeCompare(a.date);
+          return b.id.localeCompare(a.id);
+        });
+      }
+
+      function renderPower() {
+        const list = document.getElementById("log-list");
+        const sorted = sortedLog();
+
+        if (sorted.length === 0) {
+          list.innerHTML = '<div class="empty">No entries yet. Log your first power reading.</div>';
+          document.getElementById("stat-latest").textContent = "—";
+          document.getElementById("stat-growth").textContent = "—";
+          return;
+        }
+
+        const chrono = [...sorted].reverse();
+        const latest = chrono[chrono.length - 1];
+        const first = chrono[0];
+        const growth = latest.power - first.power;
+
+        document.getElementById("stat-latest").textContent = formatNumber(latest.power);
+        document.getElementById("stat-growth").textContent =
+          (growth >= 0 ? "+" : "") + formatNumber(growth);
+
+        let html = "";
+        for (let i = 0; i < sorted.length; i++) {
+          const entry = sorted[i];
+          const chronoIdx = chrono.findIndex(e => e.id === entry.id);
+          let deltaHtml = "";
+          if (chronoIdx > 0) {
+            const prev = chrono[chronoIdx - 1];
+            const diff = entry.power - prev.power;
+            if (diff > 0) deltaHtml = `<span class="log-delta up">+${formatNumber(diff)}</span>`;
+            else if (diff < 0) deltaHtml = `<span class="log-delta down">${formatNumber(diff)}</span>`;
+            else deltaHtml = `<span class="log-delta flat">±0</span>`;
+          }
+
+          html += `
+            <div class="log-item" data-id="${entry.id}">
+              <div class="log-main">
+                <div>
+                  <span class="log-power">${formatNumber(entry.power)}</span>
+                  ${deltaHtml}
+                </div>
+                <div class="log-date">${entry.date}</div>
+                ${entry.notes ? `<div class="log-notes">${escapeHtml(entry.notes)}</div>` : ""}
+              </div>
+              <button class="btn btn-danger" data-delete="${entry.id}">Delete</button>
+            </div>`;
+        }
+        list.innerHTML = html;
+
+        list.querySelectorAll("[data-delete]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            if (confirm("Delete this power entry?")) {
+              state.powerLog = state.powerLog.filter(e => e.id !== btn.getAttribute("data-delete"));
+              save();
+              renderPower();
+            }
+          });
+        });
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      document.getElementById("btn-add-power").addEventListener("click", () => {
+        const date = document.getElementById("p-date").value || todayISO();
+        const power = parseInt(document.getElementById("p-power").value, 10);
+        const notes = (document.getElementById("p-notes").value || "").trim();
+
+        if (!power || power < 0 || isNaN(power)) {
+          alert("Enter a valid power number.");
+          return;
+        }
+
+        state.powerLog.push({ id: uid(), date, power, notes });
+        save();
+        document.getElementById("p-power").value = "";
+        document.getElementById("p-notes").value = "";
+        renderPower();
+      });
+
+      // Buffs / Free time
+      function fillBuffInputs() {
+        document.getElementById("buff-build").value = state.buffBuild;
+        document.getElementById("buff-research").value = state.buffResearch;
+        writeHMS("free-build-h", "free-build-m", "free-build-s", state.freeBuildSec);
+        writeHMS("free-res-h", "free-res-m", "free-res-s", state.freeResearchSec);
+      }
+
+      document.getElementById("btn-save-buffs").addEventListener("click", () => {
+        state.buffBuild = Math.max(0, parseFloat(document.getElementById("buff-build").value) || 0);
+        state.buffResearch = Math.max(0, parseFloat(document.getElementById("buff-research").value) || 0);
+        state.freeBuildSec = parseHMS("free-build-h", "free-build-m", "free-build-s");
+        state.freeResearchSec = parseHMS("free-res-h", "free-res-m", "free-res-s");
+        save();
+        applyMode();
+        const status = document.getElementById("buff-status");
+        status.style.display = "block";
+        status.textContent = "Saved.";
+        setTimeout(() => { status.style.display = "none"; }, 2000);
+      });
+
+      document.getElementById("btn-export").addEventListener("click", () => {
+        const payload = {
+          version: 2,
+          app: "LW Command Post",
+          exportedAt: new Date().toISOString(),
+          buffBuild: state.buffBuild,
+          buffResearch: state.buffResearch,
+          freeBuildSec: state.freeBuildSec,
+          freeResearchSec: state.freeResearchSec,
+          powerLog: state.powerLog,
+          lawyers: state.lawyers,
+          hubHelps: state.hubHelps,
+          hubSlots: state.hubSlots,
+          hubFixedSec: state.hubFixedSec,
+          lastCalcSec: state.lastCalcSec,
+          coopBuff: !!state.coopBuff
+        };
+        const data = JSON.stringify(payload, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "lw-command-backup-" + todayISO() + ".json";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.getElementById("btn-import").addEventListener("click", () => {
+        document.getElementById("import-file").click();
+      });
+
+      document.getElementById("import-file").addEventListener("change", (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        ev.target.value = "";
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+
+            // Support full backup and older power-log-only exports
+            let buffBuild = state.buffBuild;
+            let buffResearch = state.buffResearch;
+            let freeBuildSec = state.freeBuildSec;
+            let freeResearchSec = state.freeResearchSec;
+            let lawyers = state.lawyers;
+            let hubHelps = state.hubHelps;
+            let hubSlots = state.hubSlots;
+            let hubFixedSec = state.hubFixedSec;
+            let lastCalcSec = state.lastCalcSec;
+            let powerLog = [];
+
+            if (Array.isArray(data)) {
+              // Old power-only export
+              powerLog = data;
+            } else if (data && typeof data === "object") {
+              if (Array.isArray(data.powerLog)) powerLog = data.powerLog;
+              if (data.buffBuild != null) buffBuild = Number(data.buffBuild) || 0;
+              if (data.buffResearch != null) buffResearch = Number(data.buffResearch) || 0;
+              const migrated = migrateFreeSeconds(data);
+              if (data.freeBuildSec != null || data.freeBuildMin != null) freeBuildSec = migrated.freeBuildSec;
+              if (data.freeResearchSec != null || data.freeResearchMin != null) freeResearchSec = migrated.freeResearchSec;
+              if (Array.isArray(data.lawyers)) lawyers = data.lawyers;
+              if (data.hubHelps != null) hubHelps = Number(data.hubHelps) || 0;
+              if (data.hubSlots != null) hubSlots = Number(data.hubSlots) || 4;
+              if (data.hubFixedSec != null) hubFixedSec = Number(data.hubFixedSec) || 0;
+              if (data.lastCalcSec != null) lastCalcSec = Number(data.lastCalcSec) || 0;
+              if (data.coopBuff != null) state.coopBuff = !!data.coopBuff;
+            } else {
+              throw new Error("Unrecognized backup format");
+            }
+
+            // Normalize power entries
+            powerLog = powerLog
+              .filter(e => e && typeof e === "object" && e.power != null)
+              .map(e => ({
+                id: e.id || uid(),
+                date: e.date || todayISO(),
+                power: Number(e.power) || 0,
+                notes: e.notes ? String(e.notes) : ""
+              }));
+
+            const msg = "Import this backup?\n\n" +
+              "Power entries: " + powerLog.length + "\n" +
+              "Construction buff: " + buffBuild + "%\n" +
+              "Research buff: " + buffResearch + "%\n" +
+              "Free construct: " + formatDuration(freeBuildSec) + "\n" +
+              "Free research: " + formatDuration(freeResearchSec) + "\n\n" +
+              "This replaces your current data on this device.";
+
+            if (!confirm(msg)) return;
+
+            state.buffBuild = buffBuild;
+            state.buffResearch = buffResearch;
+            state.freeBuildSec = freeBuildSec;
+            state.freeResearchSec = freeResearchSec;
+            state.lawyers = lawyers;
+            state.hubHelps = hubHelps;
+            state.hubSlots = hubSlots;
+            state.hubFixedSec = hubFixedSec;
+            state.lastCalcSec = lastCalcSec;
+            state.powerLog = powerLog;
+            save();
+            fillBuffInputs();
+            fillHelpInputs();
+            applyMode();
+            applyPosition();
+            renderPower();
+            renderLawyers();
+            updateHelpCalcPreview();
+            alert("Backup imported.");
+          } catch (err) {
+            alert("Could not import file. Make sure it is a valid LW Command backup JSON.");
+            console.warn(err);
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      document.getElementById("btn-clear").addEventListener("click", () => {
+        if (confirm("Clear all power log entries and reset buffs / free times?")) {
+          state.powerLog = [];
+          state.buffBuild = 100;
+          state.buffResearch = 80;
+          state.freeBuildSec = 0;
+          state.freeResearchSec = 0;
+          state.position = "none";
+          state.coopBuff = false;
+          state.lawyers = [];
+          state.hubHelps = 0;
+          state.hubSlots = 4;
+          state.hubFixedSec = 0;
+          state.lastCalcSec = 0;
+          save();
+          fillBuffInputs();
+          fillHelpInputs();
+          applyMode();
+          applyPosition();
+          applyCoop();
+          renderPower();
+          renderLawyers();
+          updateHelpCalcPreview();
+        }
+      });
+
+      // Clear "0" on focus so you can type without backspacing; restore 0 on blur if empty
+      function wireClearOnFocus(ids) {
+        ids.forEach(id => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener("focus", () => {
+            if (el.value === "0" || el.value === "0.0") {
+              el.value = "";
+            }
+            // Select all remaining content so typing replaces it
+            try { el.select(); } catch (_) {}
+          });
+          el.addEventListener("blur", () => {
+            if (el.value === "" || el.value == null) {
+              // Time fields and free-min default to 0; boost can stay empty until mode fills it
+              if (id === "days" || id === "hours" || id === "mins" ||
+                  id === "free-build-h" || id === "free-build-m" || id === "free-build-s" ||
+                  id === "free-res-h" || id === "free-res-m" || id === "free-res-s") {
+                el.value = "0";
+              }
+            }
+          });
+        });
+      }
+
+      function updateHubStatsView() {
+        document.getElementById("hub-helps-view").textContent = String(state.hubHelps || 0);
+        document.getElementById("hub-slots-view").textContent = String(state.hubSlots || 4);
+        document.getElementById("hub-fixed-view").textContent = formatDuration(state.hubFixedSec || 0);
+        document.getElementById("hub-lawyer-count").textContent = String((state.lawyers || []).length);
+      }
+
+      function fillHelpInputs() {
+        document.getElementById("hub-helps").value = state.hubHelps || 0;
+        document.getElementById("hub-slots").value = state.hubSlots || 4;
+        const extra = Math.max(0, Number(state.hubFixedSec) || 0);
+        document.getElementById("hub-fixed-m").value = Math.floor(extra / 60);
+        document.getElementById("hub-fixed-s").value = extra % 60;
+        applyHelpSrc();
+        updateHelpCalcPreview();
+        updateHubStatsView();
+      }
+
+      function persistHubFields() {
+        state.hubHelps = Math.max(0, parseInt(document.getElementById("hub-helps").value, 10) || 0);
+        state.hubSlots = Math.max(1, Math.min(8, parseInt(document.getElementById("hub-slots").value, 10) || 4));
+        const em = Math.max(0, parseInt(document.getElementById("hub-fixed-m").value, 10) || 0);
+        const es = Math.max(0, parseInt(document.getElementById("hub-fixed-s").value, 10) || 0);
+        state.hubFixedSec = em * 60 + es;
+        save();
+        updateHubStatsView();
+      }
+
+      function updateHelpCalcPreview() {
+        const el = document.getElementById("help-calc-preview");
+        if (state.lastCalcSec > 0) {
+          el.textContent = "Last Time result: " + formatDuration(state.lastCalcSec);
+        } else {
+          el.textContent = "No Time calculation yet. Run one on the Time tab, or switch to Manual.";
+        }
+      }
+
+      function applyHelpSrc() {
+        document.getElementById("help-src-calc").classList.toggle("active", state.helpSrc === "calc");
+        document.getElementById("help-src-manual").classList.toggle("active", state.helpSrc === "manual");
+        document.getElementById("help-manual").style.display = state.helpSrc === "manual" ? "block" : "none";
+        document.getElementById("help-calc-preview").style.display = state.helpSrc === "calc" ? "block" : "none";
+      }
+
+      document.getElementById("help-src-calc").addEventListener("click", () => {
+        state.helpSrc = "calc";
+        save();
+        applyHelpSrc();
+      });
+      document.getElementById("help-src-manual").addEventListener("click", () => {
+        state.helpSrc = "manual";
+        save();
+        applyHelpSrc();
+      });
+
+      document.getElementById("lw-rarity-ur").addEventListener("click", () => {
+        lawyerRarity = "UR";
+        document.getElementById("lw-rarity-ur").classList.add("active");
+        document.getElementById("lw-rarity-ssr").classList.remove("active");
+      });
+      document.getElementById("lw-rarity-ssr").addEventListener("click", () => {
+        lawyerRarity = "SSR";
+        document.getElementById("lw-rarity-ssr").classList.add("active");
+        document.getElementById("lw-rarity-ur").classList.remove("active");
+      });
+
+      function sortedLawyers() {
+        return [...state.lawyers].sort((a, b) => {
+          const ar = a.rarity === "UR" ? 0 : 1;
+          const br = b.rarity === "UR" ? 0 : 1;
+          if (ar !== br) return ar - br;
+          return (Number(b.helpSec) || 0) - (Number(a.helpSec) || 0);
+        });
+      }
+
+      function renderLawyers() {
+        const box = document.getElementById("lawyer-list");
+        if (!state.lawyers.length) {
+          box.innerHTML = '<div class="empty">No lawyers saved yet.</div>';
+          return;
+        }
+        box.innerHTML = sortedLawyers().map(l => {
+          const t = formatDuration(l.helpSec || 0);
+          return '<div class="lawyer ' + (l.rarity === "UR" ? "ur" : "ssr") + '">' +
+            '<div class="lawyer-top">' +
+              '<div><strong>' + escapeHtml(l.name) + '</strong></div>' +
+              '<span class="rarity-pill">' + l.rarity + '</span>' +
+            '</div>' +
+            '<div class="hint" style="margin:0 0 8px;">Helps +' + l.helps + ' · Help time ' + t + '</div>' +
+            '<button class="btn btn-danger" data-del-lawyer="' + l.id + '">Remove</button>' +
+          '</div>';
+        }).join("");
+        box.querySelectorAll("[data-del-lawyer]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            state.lawyers = state.lawyers.filter(l => l.id !== btn.getAttribute("data-del-lawyer"));
+            save();
+            renderLawyers();
+            updateHubStatsView();
+          });
+        });
+        updateHubStatsView();
+      }
+
+      document.getElementById("btn-add-lawyer").addEventListener("click", () => {
+        const name = (document.getElementById("lw-name").value || "").trim();
+        const helps = Math.max(0, parseInt(document.getElementById("lw-helps").value, 10) || 0);
+        const tm = Math.max(0, parseInt(document.getElementById("lw-time-m").value, 10) || 0);
+        const ts = Math.max(0, parseInt(document.getElementById("lw-time-s").value, 10) || 0);
+        if (!name) {
+          alert("Enter a lawyer name.");
+          return;
+        }
+        state.lawyers.push({
+          id: uid(),
+          name,
+          rarity: lawyerRarity,
+          helps,
+          helpSec: tm * 60 + ts
+        });
+        save();
+        document.getElementById("lw-name").value = "";
+        document.getElementById("lw-helps").value = "";
+        document.getElementById("lw-time-m").value = "0";
+        document.getElementById("lw-time-s").value = "0";
+        renderLawyers();
+        updateHubStatsView();
+      });
+
+      function getHelpStartSec() {
+        if (state.helpSrc === "manual") {
+          const d = Math.max(0, parseFloat(document.getElementById("help-days").value) || 0);
+          const h = Math.max(0, parseFloat(document.getElementById("help-hours").value) || 0);
+          const m = Math.max(0, parseFloat(document.getElementById("help-mins").value) || 0);
+          return d * 86400 + h * 3600 + m * 60;
+        }
+        return Math.max(0, Number(state.lastCalcSec) || 0);
+      }
+
+      function simulateHelps(startSec, helpCount, fixedSec) {
+        let remaining = startSec;
+        const floor = 60;
+        const fixed = Math.max(floor, fixedSec);
+        const used = Math.max(0, helpCount);
+        for (let i = 0; i < used; i++) {
+          if (remaining <= 0) break;
+          const cut = Math.max(remaining * 0.005, fixed);
+          remaining = Math.max(0, remaining - cut);
+        }
+        return remaining;
+      }
+
+      function combosOf(arr, k) {
+        const out = [];
+        function rec(start, path) {
+          if (path.length === k) {
+            out.push(path.slice());
+            return;
+          }
+          for (let i = start; i < arr.length; i++) {
+            path.push(arr[i]);
+            rec(i + 1, path);
+            path.pop();
+          }
+        }
+        rec(0, []);
+        return out;
+      }
+
+      document.getElementById("btn-opt-help").addEventListener("click", () => {
+        persistHubFields();
+        const startSec = getHelpStartSec();
+        if (startSec <= 0) {
+          alert("Enter a timer (or calculate one on the Time tab first).");
+          return;
+        }
+        if (!state.lawyers.length) {
+          alert("Add at least one lawyer first.");
+          return;
+        }
+        const slots = Math.min(state.hubSlots || 4, state.lawyers.length);
+        const lists = combosOf(state.lawyers, slots);
+        let best = null;
+        lists.forEach(combo => {
+          const helps = state.hubHelps + combo.reduce((s, l) => s + (Number(l.helps) || 0), 0);
+          const fixed = state.hubFixedSec + combo.reduce((s, l) => s + (Number(l.helpSec) || 0), 0);
+          const remaining = simulateHelps(startSec, helps, fixed);
+          const saved = startSec - remaining;
+          if (!best || remaining < best.remaining - 0.5 ||
+              (Math.abs(remaining - best.remaining) < 0.5 && helps > best.helps)) {
+            best = { combo, helps, fixed, remaining, saved };
+          }
+        });
+
+        const box = document.getElementById("help-result");
+        if (!best) {
+          box.style.display = "block";
+          box.innerHTML = "<p class='hint'>Could not find a combo.</p>";
+          return;
+        }
+        const people = best.combo.map(l => {
+          const cls = l.rarity === "UR" ? "ur" : "ssr";
+          return '<div class="lawyer ' + cls + '" style="margin-bottom:6px;">' +
+            '<div class="lawyer-top"><strong>' + escapeHtml(l.name) + '</strong>' +
+            '<span class="rarity-pill">' + l.rarity + '</span></div>' +
+            '<div class="hint" style="margin:0;">+' + l.helps + ' helps · ' + formatDuration(l.helpSec) + '</div></div>';
+        }).join("");
+        box.style.display = "block";
+        box.innerHTML =
+          '<div class="result-box" style="margin-bottom:12px;">' +
+            '<div class="result-label">Time after helps</div>' +
+            '<div class="result-value">' + formatDuration(best.remaining) + '</div>' +
+            '<div class="result-meta">' +
+              '<span>Saved <strong>' + formatDuration(best.saved) + '</strong></span>' +
+              '<span>Helps <strong>' + best.helps + '</strong></span>' +
+              '<span>Fixed / help <strong>' + formatDuration(Math.max(60, best.fixed)) + '</strong></span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="hint" style="margin-top:0;">Slot these lawyers in the Alliance Support Hub:</div>' +
+          people;
+      });
+
+      ["hub-helps", "hub-slots", "hub-fixed-m", "hub-fixed-s"].forEach(id => {
+        document.getElementById(id).addEventListener("change", persistHubFields);
+      });
+
+      // Init
+      load();
+      document.getElementById("p-date").value = todayISO();
+      fillBuffInputs();
+      fillHelpInputs();
+      applyMode();
+      applyPosition();
+      applyCoop();
+      renderPower();
+      renderLawyers();
+      wireClearOnFocus([
+        "days", "hours", "mins", "boost",
+        "p-power", "buff-build", "buff-research",
+        "free-build-h", "free-build-m", "free-build-s",
+        "free-res-h", "free-res-m", "free-res-s",
+        "help-days", "help-hours", "help-mins",
+        "lw-time-m", "lw-time-s", "hub-fixed-m", "hub-fixed-s"
+      ]);
+
+      // PWA install hint + service worker
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      }
+      const installNote = document.getElementById("install-note");
+      if (installNote && !window.matchMedia("(display-mode: standalone)").matches && !navigator.standalone) {
+        installNote.style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>
