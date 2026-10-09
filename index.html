@@ -624,7 +624,21 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .combo-item:last-child { border-bottom: none; }
+    .iframe-wrap {
+      height: calc(100dvh - 180px);
+      min-height: 480px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .iframe-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #0a0e14;
+    }
 
     @media (max-width: 360px) {
       .result-value { font-size: 1.45rem; }
@@ -645,6 +659,7 @@
       <button class="tab active" data-tab="calc" role="tab">⏱ Time</button>
       <button class="tab" data-tab="power" role="tab">⚡ Power</button>
       <button class="tab" data-tab="help" role="tab">🤝 Help</button>
+      <button class="tab" data-tab="hedge" role="tab">🦔 Hedge</button>
       <button class="tab" data-tab="buffs" role="tab">⚙ Buffs</button>
     </nav>
 
@@ -889,6 +904,27 @@
         </div>
         <button class="btn btn-primary" id="btn-add-lawyer">Add Lawyer</button>
         <div id="lawyer-list" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <!-- HEDGE DASHBOARD -->
+    <section id="panel-hedge" class="panel" role="tabpanel">
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 12px 14px 8px; display:flex; justify-content:space-between; align-items:center;">
+          <h2 class="card-title" style="margin:0;">Cpt Hedge Dashboard</h2>
+          <a href="https://cpt-hedge.com/dashboard" target="_blank" rel="noopener" style="font-size:0.75rem; color:var(--accent); text-decoration:none;">Open full site ↗</a>
+        </div>
+        <p class="hint" style="margin: 0 14px 10px;">
+          Live server tools from Cpt Hedgehog. Sign in if prompted. Your login stays on their site.
+        </p>
+        <div class="iframe-wrap">
+          <iframe
+            src="https://cpt-hedge.com/dashboard"
+            title="Cpt Hedge Dashboard"
+            allow="fullscreen"
+            referrerpolicy="no-referrer-when-downgrade"
+          ></iframe>
+        </div>
       </div>
     </section>
 
